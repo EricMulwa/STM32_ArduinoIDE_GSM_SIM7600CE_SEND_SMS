@@ -1,0 +1,54 @@
+/*
+This Program interfaces STM32F103C8T6 with SIM7600CE GSM 4G Module to send the message "Hello, GSM is Ready!".The program is developed in the Arduino IDE.
+The program allows you to send an SMS from GSM SIM7600CE 4G Module to the phone number specified in the code (Change it to your desired number)
+The code sends the SMS only once but you can comment out the flag and have it send at any interval you specify.
+
+  modified 8 NOV 2023
+  by Eric Mulwa Eng BSc
+*/
+
+#include <Arduino.h>
+#include <string.h>
+
+bool sentMessage = false; // Flag to control SMS sending
+
+void setup() {
+  Serial.begin(115200);  // Initialize the Arduino serial port
+  Serial1.begin(115200); // Initialize the Serial1 port (USART1) for the SIM7600 module
+  delay(1000);  // Give the module some time to initialize
+}
+
+void loop() {
+  if (!sentMessage) {
+    char mobileNumber[] = "+254796456877";  // Enter the Mobile Number you want to send to
+    char ATcommand[80];
+    uint8_t buffer[30] = {0};
+    uint8_t ATisOK = 0;
+
+    while (!ATisOK) {
+      sprintf(ATcommand, "AT\r\n");
+      Serial1.print(ATcommand);
+      delay(1000);
+      if (Serial1.find("OK")) {
+        ATisOK = 1;
+      }
+      delay(1000);
+    }
+
+    sprintf(ATcommand, "AT+CMGF=1\r\n");
+    Serial1.print(ATcommand);
+    delay(100);
+    Serial1.readBytes(buffer, sizeof(buffer));
+    delay(1000);
+    memset(buffer, 0, sizeof(buffer));
+
+    sprintf(ATcommand, "AT+CMGS=\"%s\"\r\n", mobileNumber);
+    Serial1.print(ATcommand);
+    delay(100);
+    sprintf(ATcommand, "Hello, GSM is Ready!%c", 0x1a);
+    Serial1.print(ATcommand);
+    delay(4000);
+
+    sentMessage = true; // Set the flag to true to indicate that the message has been sent
+  }
+}
